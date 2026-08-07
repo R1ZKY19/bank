@@ -5,7 +5,7 @@
 const CONFIG = {
   // Placeholder or user-configured GAS Web App Webhook URL
   // Replace this URL with deployed Google Apps Script Web App URL
-  API_URL: localStorage.getItem('BANK_APP_GAS_URL') || '',
+  API_URL: localStorage.getItem('https://script.google.com/macros/s/AKfycbw3yXkpqxipFlRXuwdQl9AkMMe5ANLfX5C3TOC-EAa7aWw8o4MBGAq3iozJa2HA89RtmA/exec') || '',
   
   APP_NAME: 'Bank Admin V2',
   VERSION: '2.0.0',
