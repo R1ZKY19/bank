@@ -36,7 +36,7 @@
         </div>
         <div>
           <h1 style="font-size: 1.125rem; font-weight: 800; line-height: 1.2;">Bank Admin</h1>
-          <p class="text-secondary text-xs">Version 2.0 Enterprise</p>
+          <p class="text-secondary text-xs">Version 2.0 Extended</p>
         </div>
       </div>
 
@@ -48,6 +48,10 @@
         <a href="#" class="nav-item" id="nav-users" data-tab="users">
           <i data-lucide="users"></i>
           <span>Kelola User</span>
+        </a>
+        <a href="#" class="nav-item" id="nav-ip" data-tab="ip">
+          <i data-lucide="shield-check"></i>
+          <span>IP Whitelist (Leader)</span>
         </a>
         <a href="#" class="nav-item" id="nav-logs" data-tab="logs">
           <i data-lucide="file-text"></i>
@@ -85,7 +89,7 @@
           </button>
           <div style="position: relative; width: 280px;">
             <i data-lucide="search" style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); width: 16px;"></i>
-            <input type="text" id="input-search" class="form-input" style="padding-left: 2.25rem;" placeholder="Cari Rekening / HP / Bank...">
+            <input type="text" id="input-search" class="form-input" style="padding-left: 2.25rem;" placeholder="Cari Rekening / ID IB / HP / Bank...">
           </div>
         </div>
 
@@ -95,7 +99,7 @@
           </button>
           <button class="btn btn-outline" onclick="refreshDashboard()"><i data-lucide="refresh-cw"></i> Refresh</button>
           
-          <button class="btn btn-primary" id="btn-add-data" onclick="openBankModal()"><i data-lucide="plus"></i> Tambah Data</button>
+          <button class="btn btn-primary" id="btn-add-data" onclick="openBankModal()"><i data-lucide="plus"></i> Tambah Bank</button>
           <button class="btn btn-secondary" id="btn-import-data" onclick="triggerImportFile()"><i data-lucide="upload"></i> Import</button>
           
           <div style="position: relative; display: inline-block;">
@@ -139,7 +143,7 @@
               <div class="text-muted text-xs">Siap digunakan</div>
             </div>
             <div class="glass-card">
-              <div class="text-secondary text-xs font-semibold">STATUS NONAKTIF</div>
+              <div class="text-secondary text-xs font-semibold">NONAKTIF / CABUT KAS</div>
               <div id="stat-total-nonaktif" class="stat-value" style="color: var(--rose);">0</div>
               <div class="text-muted text-xs">Dihentikan / Limit</div>
             </div>
@@ -169,6 +173,12 @@
                 <select id="select-filter-bank" class="form-select" style="width: auto;">
                   <option value="">Semua Bank</option>
                 </select>
+                <select id="select-filter-jenis" class="form-select" style="width: auto;">
+                  <option value="">Semua Jenis Bank</option>
+                  <option value="BANK DEPO">BANK DEPO</option>
+                  <option value="BANK WD">BANK WD</option>
+                  <option value="BANK KAS">BANK KAS</option>
+                </select>
                 <select id="select-filter-group" class="form-select" style="width: auto;">
                   <option value="">Semua Group</option>
                 </select>
@@ -178,6 +188,7 @@
                   <option value="NONAKTIF">NONAKTIF</option>
                   <option value="PENDING">PENDING</option>
                   <option value="LIMIT">LIMIT</option>
+                  <option value="REK CABUT KAS 1">REK CABUT KAS 1</option>
                 </select>
               </div>
 
@@ -199,12 +210,13 @@
                 <tr>
                   <th class="sticky-col">No</th>
                   <th>Bank</th>
+                  <th>Jenis</th>
                   <th>Group</th>
                   <th>No Rekening</th>
                   <th>Nama Rekening</th>
                   <th>No HP</th>
                   <th>Status</th>
-                  <th>Update Terakhir</th>
+                  <th>Masa Aktif</th>
                   <th>Aksi</th>
                 </tr>
               </thead>
@@ -247,14 +259,29 @@
                   <th>Aksi</th>
                 </tr>
               </thead>
-              <tbody id="table-users-body">
-                <!-- User Rows -->
-              </tbody>
+              <tbody id="table-users-body"></tbody>
             </table>
           </div>
         </div>
 
-        <!-- TAB 3: ACTIVITY LOGS -->
+        <!-- TAB 3: IP WHITELIST SETTINGS (LEADER ONLY) -->
+        <div id="tab-ip" class="tab-content d-none">
+          <div class="glass-card mb-3">
+            <h2 class="text-lg font-bold mb-1">Pengaturan Whitelist IP Access (Leader)</h2>
+            <p class="text-xs text-muted mb-4">Membatasi login pengguna hanya dari Alamat IP publik yang disetujui. Kosongkan atau isikan bintang (*) jika ingin memperbolehkan semua IP.</p>
+
+            <form onsubmit="handleSaveIpWhitelist(event)" style="max-width: 580px;">
+              <div class="form-group">
+                <label class="form-label">Alamat IP Publik Disetujui (Pisahkan dengan koma)</label>
+                <textarea id="form-ip-whitelist" class="form-textarea" rows="4" placeholder="Contoh: 180.252.12.34, 110.138.99.100, 36.85.122.5"></textarea>
+                <span class="text-xs text-muted" style="margin-top:0.25rem;">IP Anda saat ini dapat dideteksi secara otomatis saat login.</span>
+              </div>
+              <button type="submit" class="btn btn-primary"><i data-lucide="shield-check"></i> Simpan Whitelist IP</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- TAB 4: ACTIVITY LOGS -->
         <div id="tab-logs" class="tab-content d-none">
           <div class="glass-card mb-3">
             <h2 class="text-lg font-bold mb-1">Audit Trail & Activity Log</h2>
@@ -271,9 +298,7 @@
                   <th>Detail</th>
                 </tr>
               </thead>
-              <tbody id="table-logs-body">
-                <!-- Log Rows -->
-              </tbody>
+              <tbody id="table-logs-body"></tbody>
             </table>
           </div>
         </div>
@@ -285,63 +310,109 @@
   <!-- Hidden File Input for Import -->
   <input type="file" id="input-import-file" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleImportFileSelect(this)">
 
-  <!-- SLIDE-OVER DRAWER (DETAIL VIEW) -->
-  <div id="drawer-backdrop" class="drawer-backdrop" onclick="closeDrawer()">
-    <div class="drawer-content" onclick="event.stopPropagation()">
-      <div class="d-flex align-items-center justify-content-between" style="border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.25rem;">
-        <div>
-          <h3 id="drawer-bank-name" class="font-bold text-lg">Detail Rekening</h3>
-          <span id="drawer-bank-group" class="badge badge-indigo">GROUP</span>
+  <!-- CENTERED POPUP MODAL (DETAIL VIEW) -->
+  <div id="modal-detail-backdrop" class="modal-detail-backdrop" onclick="closeBankDetailModal()">
+    <div class="modal-detail-window" onclick="event.stopPropagation()">
+      <div class="d-flex align-items-center justify-content-between mb-3" style="border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+        <div class="d-flex align-items-center gap-3">
+          <div class="bank-logo-box">
+            <img id="detail-modal-logo-img" src="" alt="Bank Logo">
+          </div>
+          <div>
+            <div class="d-flex align-items-center gap-2">
+              <h3 id="detail-modal-bank" class="font-bold text-lg">BCA</h3>
+              <span id="detail-modal-jenis" class="badge badge-emerald">BANK DEPO</span>
+            </div>
+            <span id="detail-modal-group" class="badge badge-indigo">GROUP</span>
+          </div>
         </div>
-        <button class="btn btn-icon btn-outline" onclick="closeDrawer()"><i data-lucide="x"></i></button>
+        <button class="btn btn-icon btn-outline" onclick="closeBankDetailModal()"><i data-lucide="x"></i></button>
       </div>
 
-      <div style="display: flex; flex-direction: column; gap: 1rem;">
-        <div class="glass-card">
-          <div class="text-xs text-muted mb-1">NOMOR REKENING</div>
-          <div class="d-flex align-items-center justify-content-between">
-            <span id="drawer-no-rek" class="text-mono font-bold text-lg">123456789</span>
-            <button class="btn btn-outline btn-xs" onclick="copyText(document.getElementById('drawer-no-rek').textContent)"><i data-lucide="copy"></i> Copy</button>
+      <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+        <div class="glass-card" style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div class="text-xs text-muted">MASA AKTIF & HITUNGAN MUNDUR</div>
+            <div class="text-sm font-semibold" style="margin-top: 2px;">
+              <span id="detail-modal-tgl-aktif">-</span> s/d <span id="detail-modal-tgl-expire">-</span>
+            </div>
+          </div>
+          <span id="detail-modal-exp-badge" class="badge badge-emerald">Sisa 30 Hari</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.85rem;">
+          <div class="glass-card">
+            <div class="text-xs text-muted mb-1">NOMOR REKENING</div>
+            <div class="d-flex align-items-center justify-content-between">
+              <span id="detail-modal-no-rek" class="text-mono font-bold text-base">123456789</span>
+              <button class="btn btn-outline btn-xs" onclick="copyText(document.getElementById('detail-modal-no-rek').textContent)"><i data-lucide="copy"></i> Copy</button>
+            </div>
+          </div>
+
+          <div class="glass-card">
+            <div class="text-xs text-muted mb-1">NAMA REKENING PEMILIK</div>
+            <div id="detail-modal-nama-rek" class="font-semibold text-sm" style="margin-top:4px;">-</div>
           </div>
         </div>
 
-        <div class="glass-card">
-          <div class="text-xs text-muted mb-1">NAMA REKENING</div>
-          <div id="drawer-nama-rek" class="font-semibold text-base">-</div>
-        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.85rem;">
+          <div class="glass-card">
+            <div class="text-xs text-muted mb-1">NOMOR HP OPERASIONAL</div>
+            <div class="d-flex align-items-center justify-content-between">
+              <span id="detail-modal-no-hp" class="text-mono font-semibold text-sm">-</span>
+              <button class="btn btn-outline btn-xs" onclick="copyText(document.getElementById('detail-modal-no-hp').textContent)"><i data-lucide="phone"></i> Copy</button>
+            </div>
+          </div>
 
-        <div class="glass-card">
-          <div class="text-xs text-muted mb-1">NOMOR HP OPERASIONAL</div>
-          <div class="d-flex align-items-center justify-content-between">
-            <span id="drawer-no-hp" class="text-mono font-semibold">-</span>
-            <button class="btn btn-outline btn-xs" onclick="copyText(document.getElementById('drawer-no-hp').textContent)"><i data-lucide="phone"></i> Copy</button>
+          <div class="glass-card">
+            <div class="text-xs text-muted mb-1">INFO SIM CARD / SLOT</div>
+            <div id="detail-modal-sim-info" class="text-sm font-semibold" style="margin-top:4px;">-</div>
           </div>
         </div>
 
-        <div class="glass-card">
-          <div class="text-xs text-muted mb-1">STATUS REKENING</div>
-          <span id="drawer-status" class="badge badge-emerald">AKTIF</span>
+        <!-- MyBCA & MBanking / IB Details -->
+        <div class="glass-card" style="background: rgba(99, 102, 241, 0.08); border-color: rgba(99, 102, 241, 0.2);">
+          <div class="text-xs font-bold text-accent mb-2" style="display: flex; align-items: center; gap: 0.35rem;">
+            <i data-lucide="key-round"></i> CREDENTIAL INTERNET BANKING (MyBCA / MBanking)
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;">
+            <div>
+              <span class="text-xs text-muted">ID IB:</span>
+              <div class="d-flex align-items-center gap-2 mt-1">
+                <span id="detail-modal-user-ib" class="text-mono font-bold text-sm">-</span>
+                <button class="btn btn-outline btn-xs" onclick="copyText(document.getElementById('detail-modal-user-ib').textContent)"><i data-lucide="copy"></i></button>
+              </div>
+            </div>
+            <div>
+              <span class="text-xs text-muted">PASSWORD IB:</span>
+              <div class="d-flex align-items-center gap-2 mt-1">
+                <span id="detail-modal-pass-ib" class="text-mono font-bold text-sm">-</span>
+                <button class="btn btn-outline btn-xs" onclick="copyText(document.getElementById('detail-modal-pass-ib').textContent)"><i data-lucide="copy"></i></button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="glass-card">
-          <div class="text-xs text-muted mb-1">CATATAN</div>
-          <p id="drawer-catatan" class="text-sm text-secondary">-</p>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.85rem;">
+          <div class="glass-card">
+            <div class="text-xs text-muted mb-1">STATUS REKENING</div>
+            <span id="detail-modal-status" class="badge badge-emerald">AKTIF</span>
+          </div>
+
+          <div class="glass-card">
+            <div class="text-xs text-muted mb-1">CATATAN KETERANGAN</div>
+            <p id="detail-modal-catatan" class="text-xs text-secondary">-</p>
+          </div>
         </div>
 
         <div class="glass-card d-none">
           <div class="text-xs text-muted mb-2">SCREENSHOT BUKTI</div>
-          <img id="drawer-screenshot-img" src="" alt="Screenshot" style="width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
-        </div>
-
-        <div style="font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 1rem;">
-          <div>Created: <span id="drawer-created">-</span></div>
-          <div>Updated: <span id="drawer-updated">-</span></div>
-          <div>Updated By: <span id="drawer-updated-by">-</span></div>
+          <img id="detail-modal-ss-img" src="" alt="Screenshot" style="width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
         </div>
 
         <div class="d-flex gap-2" style="margin-top: 1rem;">
-          <button id="drawer-btn-edit" class="btn btn-primary" style="flex: 1;"><i data-lucide="edit"></i> Edit</button>
-          <button id="drawer-btn-delete" class="btn btn-danger" style="flex: 1;"><i data-lucide="trash-2"></i> Hapus</button>
+          <button id="detail-modal-btn-edit" class="btn btn-primary" style="flex: 1;"><i data-lucide="edit"></i> Edit Data</button>
+          <button id="detail-modal-btn-delete" class="btn btn-danger" style="flex: 1;"><i data-lucide="trash-2"></i> Hapus</button>
         </div>
       </div>
     </div>
@@ -358,7 +429,7 @@
       <form id="form-bank-record" onsubmit="handleFormSubmit(event)">
         <input type="hidden" id="form-bank-id">
 
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;">
           <div class="form-group">
             <label class="form-label" for="form-bank">Nama Bank</label>
             <select id="form-bank" class="form-select" required>
@@ -373,6 +444,15 @@
           </div>
 
           <div class="form-group">
+            <label class="form-label" for="form-jenis-bank">Jenis Bank</label>
+            <select id="form-jenis-bank" class="form-select" required>
+              <option value="BANK DEPO">BANK DEPO</option>
+              <option value="BANK WD">BANK WD</option>
+              <option value="BANK KAS">BANK KAS</option>
+            </select>
+          </div>
+
+          <div class="form-group">
             <label class="form-label" for="form-group">Group</label>
             <select id="form-group" class="form-select" required>
               <option value="GROUP VIP 1">GROUP VIP 1</option>
@@ -383,46 +463,86 @@
           </div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="form-nama-rek">Nama Rekening Pemilik</label>
-          <input type="text" id="form-nama-rek" class="form-input" placeholder="e.g. PT UTAMA SEJAHTERA" required>
-        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;">
+          <div class="form-group">
+            <label class="form-label" for="form-nama-rek">Nama Rekening Pemilik</label>
+            <input type="text" id="form-nama-rek" class="form-input" placeholder="e.g. PT UTAMA SEJAHTERA" required>
+          </div>
 
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
           <div class="form-group">
             <label class="form-label" for="form-no-rek">Nomor Rekening</label>
             <input type="text" id="form-no-rek" class="form-input text-mono" placeholder="1234567890" required>
           </div>
+        </div>
 
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;">
           <div class="form-group">
             <label class="form-label" for="form-no-hp">Nomor Handphone</label>
             <input type="text" id="form-no-hp" class="form-input text-mono" placeholder="08123456789">
           </div>
+
+          <div class="form-group">
+            <label class="form-label" for="form-sim-info">Status SIM Card (Info Dual SIM)</label>
+            <input type="text" id="form-sim-info" class="form-input" placeholder="e.g. Dual SIM (SIM 1 Active)">
+          </div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="form-status">Status Rekening</label>
-          <select id="form-status" class="form-select" required>
-            <option value="AKTIF">AKTIF</option>
-            <option value="NONAKTIF">NONAKTIF</option>
-            <option value="PENDING">PENDING</option>
-            <option value="LIMIT">LIMIT</option>
-          </select>
+        <!-- Internet Banking Credentials (MyBCA & MBanking) -->
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; background: var(--bg-tertiary); padding: 0.75rem; border-radius: var(--radius-md); margin-bottom: 1rem;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="form-user-id-ib">User ID IB (MyBCA / MBanking)</label>
+            <input type="text" id="form-user-id-ib" class="form-input text-mono" placeholder="USER_IB_123">
+          </div>
+
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="form-pass-ib">Password IB</label>
+            <input type="password" id="form-pass-ib" class="form-input text-mono" placeholder="••••••••">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;">
+          <div class="form-group">
+            <label class="form-label" for="form-status">Status Rekening</label>
+            <select id="form-status" class="form-select" required>
+              <option value="AKTIF">AKTIF</option>
+              <option value="NONAKTIF">NONAKTIF</option>
+              <option value="PENDING">PENDING</option>
+              <option value="LIMIT">LIMIT</option>
+              <option value="REK CABUT KAS 1">REK CABUT KAS 1</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="form-tgl-aktif">Tanggal Aktif</label>
+            <input type="date" id="form-tgl-aktif" class="form-input">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="form-tgl-expire">Tanggal Expire</label>
+            <input type="date" id="form-tgl-expire" class="form-input">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;">
+          <div class="form-group">
+            <label class="form-label" for="form-logo-url">URL Logo Bank (Opsional)</label>
+            <input type="url" id="form-logo-url" class="form-input" placeholder="https://.../logo.png">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="form-screenshot">URL Screenshot (Cloudinary / Drive)</label>
+            <input type="url" id="form-screenshot" class="form-input" placeholder="https://.../bukti.jpg">
+          </div>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="form-catatan">Catatan / Keterangan</label>
-          <textarea id="form-catatan" class="form-textarea" rows="3" placeholder="Catatan internal..."></textarea>
+          <textarea id="form-catatan" class="form-textarea" rows="2" placeholder="Catatan internal..."></textarea>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="form-screenshot">URL Screenshot (Cloudinary / Drive Image Link)</label>
-          <input type="url" id="form-screenshot" class="form-input" placeholder="https://res.cloudinary.com/... or https://drive.google.com/...">
-        </div>
-
-        <div class="d-flex justify-content-between align-items-center" style="margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+        <div class="d-flex justify-content-between align-items-center" style="margin-top: 1.25rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
           <button type="button" class="btn btn-outline" onclick="closeModal()">Batal</button>
-          <button type="submit" class="btn btn-primary"><i data-lucide="check"></i> Simpan Data</button>
+          <button type="submit" class="btn btn-primary"><i data-lucide="check"></i> Simpan Data Bank</button>
         </div>
       </form>
     </div>
@@ -436,7 +556,6 @@
   <script src="assets/js/dashboard.js"></script>
 
   <script>
-    // Import File Trigger
     function triggerImportFile() {
       document.getElementById('input-import-file').click();
     }
@@ -477,7 +596,6 @@
       }
     }
 
-    // User Management Tab Handlers
     async function loadUsersList() {
       const tbody = document.getElementById('table-users-body');
       tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4">Memuat pengguna...</td></tr>`;
@@ -542,13 +660,37 @@
     async function deleteUserRecord(id) {
       if (confirm('Hapus user ini?')) {
         const res = await ApiService.deleteUser(id);
-        if (res.status === 'success') {
-          loadUsersList();
-        }
+        if (res.status === 'success') loadUsersList();
       }
     }
 
-    // Activity Logs Tab Handlers
+    // IP Whitelist Settings
+    async function loadIpSettings() {
+      try {
+        const res = await ApiService.request('getSettings');
+        if (res.status === 'success') {
+          document.getElementById('form-ip-whitelist').value = res.ipWhitelist || '';
+        }
+      } catch (e) {
+        console.error('Failed to load IP settings', e);
+      }
+    }
+
+    async function handleSaveIpWhitelist(e) {
+      e.preventDefault();
+      const ipList = document.getElementById('form-ip-whitelist').value.trim();
+      try {
+        const res = await ApiService.request('saveIpWhitelist', { ipList });
+        if (res.status === 'success') {
+          Swal.fire('Sukses', res.message, 'success');
+        } else {
+          Swal.fire('Error', res.message, 'error');
+        }
+      } catch (e) {
+        Swal.fire('Error', 'Gagal menyimpan IP Whitelist', 'error');
+      }
+    }
+
     async function loadActivityLogs() {
       const tbody = document.getElementById('table-logs-body');
       tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4">Memuat log aktivitas...</td></tr>`;

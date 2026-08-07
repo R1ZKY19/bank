@@ -1,15 +1,15 @@
 /**
- * BANK MANAGEMENT SYSTEM V2.0 - MAIN DASHBOARD MODULE
+ * BANK MANAGEMENT SYSTEM V2.0 - MAIN DASHBOARD MODULE (EXTENDED)
  */
 
 let state = {
   user: null,
-  master: { banks: [], groups: [], statuses: [] },
+  master: { banks: [], groups: [], statuses: [], jenisBanks: ['BANK DEPO', 'BANK WD', 'BANK KAS'] },
   pagination: { limit: 50, offset: 0, total: 0, page: 1 },
-  filters: { search: '', bank: '', group: '', status: '', date: '' },
+  filters: { search: '', bank: '', jenis: '', group: '', status: '' },
   currentData: [],
   selectedRecord: null,
-  charts: { bank: null, group: null, status: null }
+  charts: { bank: null, group: null, jenis: null }
 };
 
 let searchDebounceTimer = null;
@@ -33,22 +33,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   await refreshDashboard();
 });
 
-/**
- * Initialize Header & Role Permissions in UI
- */
 function initUI() {
   const user = state.user;
   document.getElementById('user-display-name').textContent = user.username;
   document.getElementById('user-role-badge').textContent = user.role;
 
-  // Set Role Badge Color
   const badgeEl = document.getElementById('user-role-badge');
   if (user.role === 'LEADER') badgeEl.className = 'badge badge-rose';
   else if (user.role === 'KAPTEN') badgeEl.className = 'badge badge-indigo';
   else if (user.role === 'CS') badgeEl.className = 'badge badge-amber';
   else badgeEl.className = 'badge badge-emerald';
 
-  // Apply Role Visibility Rules
   const perms = getRolePermissions(user.role);
 
   if (!perms.canAdd) document.getElementById('btn-add-data')?.classList.add('d-none');
@@ -56,38 +51,36 @@ function initUI() {
   if (!perms.canExport) document.getElementById('btn-export-dropdown')?.classList.add('d-none');
   if (!perms.canManageUsers) document.getElementById('nav-users')?.classList.add('d-none');
   if (!perms.canAuditLog) document.getElementById('nav-logs')?.classList.add('d-none');
+  if (!perms.canManageIp) document.getElementById('nav-ip')?.classList.add('d-none');
 }
 
-/**
- * Event Listeners Registration
- */
 function setupEventListeners() {
-  // Navigation Tabs
   document.querySelectorAll('.nav-item[data-tab]').forEach(item => {
     item.addEventListener('click', (e) => {
       e.preventDefault();
       document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
       item.classList.add('active');
-
-      const targetTab = item.getAttribute('data-tab');
-      switchTab(targetTab);
+      switchTab(item.getAttribute('data-tab'));
     });
   });
 
-  // Search Input Debounce
   document.getElementById('input-search').addEventListener('input', (e) => {
     clearTimeout(searchDebounceTimer);
     searchDebounceTimer = setTimeout(() => {
       state.filters.search = e.target.value.trim();
       state.pagination.offset = 0;
-      state.pagination.page = 1;
       fetchTableData();
     }, 300);
   });
 
-  // Filters
   document.getElementById('select-filter-bank').addEventListener('change', (e) => {
     state.filters.bank = e.target.value;
+    state.pagination.offset = 0;
+    fetchTableData();
+  });
+
+  document.getElementById('select-filter-jenis').addEventListener('change', (e) => {
+    state.filters.jenis = e.target.value;
     state.pagination.offset = 0;
     fetchTableData();
   });
@@ -107,24 +100,18 @@ function setupEventListeners() {
   document.getElementById('select-limit').addEventListener('change', (e) => {
     state.pagination.limit = parseInt(e.target.value);
     state.pagination.offset = 0;
-    state.pagination.page = 1;
     fetchTableData();
   });
 
-  // Theme Toggle
   document.getElementById('btn-theme-toggle').addEventListener('click', () => {
     AuthService.toggleTheme();
   });
 
-  // Logout
   document.getElementById('btn-logout').addEventListener('click', () => {
     AuthService.logout();
   });
 }
 
-/**
- * Switch View Tabs
- */
 function switchTab(tab) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.add('d-none'));
   const target = document.getElementById(`tab-${tab}`);
@@ -133,11 +120,9 @@ function switchTab(tab) {
   if (tab === 'dashboard') refreshDashboard();
   if (tab === 'users') loadUsersList();
   if (tab === 'logs') loadActivityLogs();
+  if (tab === 'ip') loadIpSettings();
 }
 
-/**
- * Fetch Master Data (Banks, Groups, Statuses)
- */
 async function loadMasterData() {
   try {
     const res = await ApiService.getMasterData();
@@ -155,19 +140,12 @@ function populateMasterDropdowns() {
   const groupFilter = document.getElementById('select-filter-group');
 
   bankFilter.innerHTML = '<option value="">Semua Bank</option>';
-  state.master.banks.forEach(b => {
-    bankFilter.innerHTML += `<option value="${b}">${b}</option>`;
-  });
+  state.master.banks.forEach(b => bankFilter.innerHTML += `<option value="${b}">${b}</option>`);
 
   groupFilter.innerHTML = '<option value="">Semua Group</option>';
-  state.master.groups.forEach(g => {
-    groupFilter.innerHTML += `<option value="${g}">${g}</option>`;
-  });
+  state.master.groups.forEach(g => groupFilter.innerHTML += `<option value="${g}">${g}</option>`);
 }
 
-/**
- * Refresh Dashboard Overview & Charts
- */
 async function refreshDashboard() {
   try {
     const statsRes = await ApiService.getDashboardStats();
@@ -190,11 +168,7 @@ function renderStatsCards(stats) {
   document.getElementById('stat-today-data').textContent = formatNumber(stats.todayCount);
 }
 
-/**
- * Render Chart.js Visualizations
- */
 function renderCharts(stats) {
-  // Chart 1: Bank Breakdown (Bar)
   const ctxBank = document.getElementById('chart-bank-breakdown')?.getContext('2d');
   if (ctxBank) {
     if (state.charts.bank) state.charts.bank.destroy();
@@ -202,18 +176,12 @@ function renderCharts(stats) {
       type: 'bar',
       data: {
         labels: Object.keys(stats.bankBreakdown),
-        datasets: [{
-          label: 'Jumlah Rekening',
-          data: Object.values(stats.bankBreakdown),
-          backgroundColor: '#6366f1',
-          borderRadius: 8
-        }]
+        datasets: [{ label: 'Jumlah Rekening', data: Object.values(stats.bankBreakdown), backgroundColor: '#6366f1', borderRadius: 8 }]
       },
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
     });
   }
 
-  // Chart 2: Group Breakdown (Doughnut)
   const ctxGroup = document.getElementById('chart-group-breakdown')?.getContext('2d');
   if (ctxGroup) {
     if (state.charts.group) state.charts.group.destroy();
@@ -221,22 +189,16 @@ function renderCharts(stats) {
       type: 'doughnut',
       data: {
         labels: Object.keys(stats.groupBreakdown),
-        datasets: [{
-          data: Object.values(stats.groupBreakdown),
-          backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#06b6d4', '#f43f5e']
-        }]
+        datasets: [{ data: Object.values(stats.groupBreakdown), backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#06b6d4', '#f43f5e'] }]
       },
       options: { responsive: true, maintainAspectRatio: false }
     });
   }
 }
 
-/**
- * Fetch Paginated Table Data
- */
 async function fetchTableData() {
   const tbody = document.getElementById('table-bank-body');
-  tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4"><span class="skeleton" style="width:100%; height:30px;"></span></td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4"><span class="skeleton" style="width:100%; height:30px;"></span></td></tr>`;
 
   try {
     const params = {
@@ -244,6 +206,7 @@ async function fetchTableData() {
       offset: state.pagination.offset,
       search: state.filters.search,
       filterBank: state.filters.bank,
+      filterJenis: state.filters.jenis,
       filterGroup: state.filters.group,
       filterStatus: state.filters.status
     };
@@ -256,14 +219,34 @@ async function fetchTableData() {
       renderPaginationControls();
     }
   } catch (e) {
-    tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4">Gagal memuat data. Periksa koneksi API.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" class="text-center text-danger py-4">Gagal memuat data. Periksa koneksi API.</td></tr>`;
+  }
+}
+
+function calculateRemainingDays(expireDateStr) {
+  if (!expireDateStr) return { days: null, text: 'Tidak Diset', badgeClass: 'badge-indigo' };
+  try {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const exp = new Date(expireDateStr);
+    exp.setHours(0,0,0,0);
+
+    const diffTime = exp - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) return { days: diffDays, text: 'Expired', badgeClass: 'badge-rose' };
+    if (diffDays === 0) return { days: 0, text: 'Masa Aktif Habis Hari Ini', badgeClass: 'badge-rose' };
+    if (diffDays <= 7) return { days: diffDays, text: `Sisa ${diffDays} Hari`, badgeClass: 'badge-amber' };
+    return { days: diffDays, text: `Sisa ${diffDays} Hari`, badgeClass: 'badge-emerald' };
+  } catch (e) {
+    return { days: null, text: expireDateStr, badgeClass: 'badge-indigo' };
   }
 }
 
 function renderTableData(items) {
   const tbody = document.getElementById('table-bank-body');
   if (!items || items.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">Tidak ada data ditemukan</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" class="text-center text-muted py-4">Tidak ada data ditemukan</td></tr>`;
     return;
   }
 
@@ -271,13 +254,27 @@ function renderTableData(items) {
     const rowNum = state.pagination.offset + index + 1;
     let badgeClass = 'badge-emerald';
     if (item.STATUS === 'NONAKTIF' || item.STATUS === 'SUSPENDED') badgeClass = 'badge-rose';
+    else if (item.STATUS === 'REK CABUT KAS 1') badgeClass = 'badge-rose';
     else if (item.STATUS === 'PENDING') badgeClass = 'badge-amber';
     else if (item.STATUS === 'LIMIT') badgeClass = 'badge-indigo';
 
+    let jenisBadge = 'badge-indigo';
+    if (item.JENIS_BANK === 'BANK DEPO') jenisBadge = 'badge-emerald';
+    else if (item.JENIS_BANK === 'BANK WD') jenisBadge = 'badge-cyan';
+    else if (item.JENIS_BANK === 'BANK KAS') jenisBadge = 'badge-amber';
+
+    const expInfo = calculateRemainingDays(item.TANGGAL_EXPIRE);
+
     return `
-      <tr onclick="openBankDrawer('${item.ID}')">
+      <tr onclick="openBankDetailModal('${item.ID}')">
         <td class="sticky-col">${rowNum}</td>
-        <td><b class="text-accent">${item.BANK || '-'}</b></td>
+        <td>
+          <div class="d-flex align-items-center gap-2">
+            ${item.LOGO_URL ? `<img src="${item.LOGO_URL}" style="width:20px; height:20px; object-fit:contain;">` : ''}
+            <b class="text-accent">${item.BANK || '-'}</b>
+          </div>
+        </td>
+        <td><span class="badge ${jenisBadge}">${item.JENIS_BANK || 'BANK DEPO'}</span></td>
         <td><span class="badge badge-indigo">${item.GROUP || '-'}</span></td>
         <td>
           <div class="d-flex align-items-center gap-2">
@@ -297,9 +294,9 @@ function renderTableData(items) {
           </div>
         </td>
         <td><span class="badge ${badgeClass}">${item.STATUS}</span></td>
-        <td class="text-muted text-xs">${formatDate(item.UPDATED_AT || item.CREATED_AT)}</td>
+        <td><span class="badge ${expInfo.badgeClass}">${expInfo.text}</span></td>
         <td>
-          <button class="btn btn-xs btn-outline" onclick="event.stopPropagation(); openBankDrawer('${item.ID}')">Detail</button>
+          <button class="btn btn-xs btn-outline" onclick="event.stopPropagation(); openBankDetailModal('${item.ID}')">Detail</button>
         </td>
       </tr>
     `;
@@ -309,9 +306,6 @@ function renderTableData(items) {
   if (window.lucide) lucide.createIcons();
 }
 
-/**
- * Render Pagination Controls
- */
 function renderPaginationControls() {
   const total = state.pagination.total;
   const limit = state.pagination.limit;
@@ -346,27 +340,46 @@ function renderPaginationControls() {
 }
 
 /**
- * Bank Record Slide-Over Drawer
+ * Centered Popup Modal Detail View
  */
-async function openBankDrawer(id) {
+function openBankDetailModal(id) {
   const record = state.currentData.find(r => r.ID === id);
   if (!record) return;
 
   state.selectedRecord = record;
 
-  document.getElementById('drawer-bank-name').textContent = `${record.BANK} - ${record.NAMA_REKENING}`;
-  document.getElementById('drawer-bank-group').textContent = record.GROUP;
-  document.getElementById('drawer-no-rek').textContent = record.NO_REKENING;
-  document.getElementById('drawer-nama-rek').textContent = record.NAMA_REKENING;
-  document.getElementById('drawer-no-hp').textContent = record.NO_HP;
-  document.getElementById('drawer-status').textContent = record.STATUS;
-  document.getElementById('drawer-catatan').textContent = record.CATATAN || 'Tidak ada catatan';
-  document.getElementById('drawer-created').textContent = formatDate(record.CREATED_AT);
-  document.getElementById('drawer-updated').textContent = formatDate(record.UPDATED_AT);
-  document.getElementById('drawer-updated-by').textContent = record.UPDATED_BY || '-';
+  document.getElementById('detail-modal-bank').textContent = record.BANK;
+  document.getElementById('detail-modal-jenis').textContent = record.JENIS_BANK || 'BANK DEPO';
+  document.getElementById('detail-modal-group').textContent = record.GROUP || '-';
+  document.getElementById('detail-modal-no-rek').textContent = record.NO_REKENING || '-';
+  document.getElementById('detail-modal-nama-rek').textContent = record.NAMA_REKENING || '-';
+  document.getElementById('detail-modal-no-hp').textContent = record.NO_HP || '-';
+  document.getElementById('detail-modal-sim-info').textContent = record.SIM_CARD_INFO || 'SIM 1';
+  document.getElementById('detail-modal-user-ib').textContent = record.USER_ID_IB || '-';
+  document.getElementById('detail-modal-pass-ib').textContent = record.PASSWORD_IB || '-';
+  document.getElementById('detail-modal-status').textContent = record.STATUS;
+  document.getElementById('detail-modal-tgl-aktif').textContent = record.TANGGAL_AKTIF || '-';
+  document.getElementById('detail-modal-tgl-expire').textContent = record.TANGGAL_EXPIRE || '-';
+  document.getElementById('detail-modal-catatan').textContent = record.CATATAN || 'Tidak ada catatan';
+
+  const expInfo = calculateRemainingDays(record.TANGGAL_EXPIRE);
+  const expBadgeEl = document.getElementById('detail-modal-exp-badge');
+  expBadgeEl.textContent = expInfo.text;
+  expBadgeEl.className = `badge ${expInfo.badgeClass}`;
+
+  // Logo Rendering
+  const logoImg = document.getElementById('detail-modal-logo-img');
+  const defaultLogos = {
+    BCA: 'https://upload.wikimedia.org/wikipedia/commons/5/5c/Bank_Central_Asia_logo.svg',
+    MANDIRI: 'https://upload.wikimedia.org/wikipedia/commons/a/ad/Bank_Mandiri_logo_2016.svg',
+    BRI: 'https://upload.wikimedia.org/wikipedia/commons/2/2e/BRI_2020.svg',
+    BNI: 'https://upload.wikimedia.org/wikipedia/commons/5/5c/Bank_BNI_logo.svg'
+  };
+
+  logoImg.src = record.LOGO_URL || defaultLogos[record.BANK] || 'https://cdn-icons-png.flaticon.com/512/2830/2830284.png';
 
   // Screenshot Preview
-  const ssImg = document.getElementById('drawer-screenshot-img');
+  const ssImg = document.getElementById('detail-modal-ss-img');
   if (record.SCREENSHOT) {
     ssImg.src = record.SCREENSHOT;
     ssImg.parentElement.classList.remove('d-none');
@@ -374,15 +387,15 @@ async function openBankDrawer(id) {
     ssImg.parentElement.classList.add('d-none');
   }
 
-  // Setup Actions according to permissions
+  // Setup Actions
   const perms = getRolePermissions(state.user.role);
-  const btnEdit = document.getElementById('drawer-btn-edit');
-  const btnDelete = document.getElementById('drawer-btn-delete');
+  const btnEdit = document.getElementById('detail-modal-btn-edit');
+  const btnDelete = document.getElementById('detail-modal-btn-delete');
 
   if (perms.canEdit || perms.canUpdateStatusNotes) {
     btnEdit.classList.remove('d-none');
     btnEdit.onclick = () => {
-      closeDrawer();
+      closeBankDetailModal();
       openBankModal(record);
     };
   } else {
@@ -391,16 +404,20 @@ async function openBankDrawer(id) {
 
   if (perms.canDelete) {
     btnDelete.classList.remove('d-none');
-    btnDelete.onclick = () => confirmDeleteRecord(record.ID);
+    btnDelete.onclick = () => {
+      closeBankDetailModal();
+      confirmDeleteRecord(record.ID);
+    };
   } else {
     btnDelete.classList.add('d-none');
   }
 
-  document.getElementById('drawer-backdrop').classList.add('open');
+  document.getElementById('modal-detail-backdrop').classList.add('open');
+  if (window.lucide) lucide.createIcons();
 }
 
-function closeDrawer() {
-  document.getElementById('drawer-backdrop').classList.remove('open');
+function closeBankDetailModal() {
+  document.getElementById('modal-detail-backdrop').classList.remove('open');
 }
 
 /**
@@ -411,18 +428,27 @@ function openBankModal(record = null) {
   document.getElementById('modal-title').textContent = isEdit ? 'Edit Data Bank' : 'Tambah Data Bank Baru';
 
   document.getElementById('form-bank-id').value = isEdit ? record.ID : '';
-  document.getElementById('form-bank').value = isEdit ? record.BANK : (state.master.banks[0] || 'BCA');
-  document.getElementById('form-group').value = isEdit ? record.GROUP : (state.master.groups[0] || 'GROUP VIP 1');
+  document.getElementById('form-bank').value = isEdit ? record.BANK : 'BCA';
+  document.getElementById('form-jenis-bank').value = isEdit ? (record.JENIS_BANK || 'BANK DEPO') : 'BANK DEPO';
+  document.getElementById('form-group').value = isEdit ? record.GROUP : 'GROUP VIP 1';
   document.getElementById('form-no-hp').value = isEdit ? record.NO_HP : '';
+  document.getElementById('form-sim-info').value = isEdit ? record.SIM_CARD_INFO : 'Dual SIM (SIM 1 Active)';
   document.getElementById('form-nama-rek').value = isEdit ? record.NAMA_REKENING : '';
   document.getElementById('form-no-rek').value = isEdit ? record.NO_REKENING : '';
+  document.getElementById('form-user-id-ib').value = isEdit ? record.USER_ID_IB : '';
+  document.getElementById('form-pass-ib').value = isEdit ? record.PASSWORD_IB : '';
   document.getElementById('form-status').value = isEdit ? record.STATUS : 'AKTIF';
+  document.getElementById('form-tgl-aktif').value = isEdit ? record.TANGGAL_AKTIF : new Date().toISOString().slice(0, 10);
+  document.getElementById('form-tgl-expire').value = isEdit ? record.TANGGAL_EXPIRE : '';
   document.getElementById('form-catatan').value = isEdit ? record.CATATAN : '';
+  document.getElementById('form-logo-url').value = isEdit ? record.LOGO_URL : '';
   document.getElementById('form-screenshot').value = isEdit ? record.SCREENSHOT : '';
 
-  // KASIR restriction
   const isKasir = state.user.role === 'KASIR';
-  ['form-bank', 'form-group', 'form-no-hp', 'form-nama-rek', 'form-no-rek'].forEach(fieldId => {
+  [
+    'form-bank', 'form-jenis-bank', 'form-group', 'form-no-hp', 'form-sim-info',
+    'form-nama-rek', 'form-no-rek', 'form-user-id-ib', 'form-pass-ib', 'form-tgl-aktif', 'form-tgl-expire'
+  ].forEach(fieldId => {
     document.getElementById(fieldId).disabled = isKasir;
   });
 
@@ -433,9 +459,6 @@ function closeModal() {
   document.getElementById('modal-backdrop').classList.remove('open');
 }
 
-/**
- * Submit Form Add/Edit
- */
 async function handleFormSubmit(e) {
   e.preventDefault();
 
@@ -444,23 +467,24 @@ async function handleFormSubmit(e) {
 
   const formData = {
     BANK: document.getElementById('form-bank').value,
+    JENIS_BANK: document.getElementById('form-jenis-bank').value,
     GROUP: document.getElementById('form-group').value,
     NO_HP: document.getElementById('form-no-hp').value,
+    SIM_CARD_INFO: document.getElementById('form-sim-info').value,
     NAMA_REKENING: document.getElementById('form-nama-rek').value,
     NO_REKENING: document.getElementById('form-no-rek').value,
+    USER_ID_IB: document.getElementById('form-user-id-ib').value,
+    PASSWORD_IB: document.getElementById('form-pass-ib').value,
     STATUS: document.getElementById('form-status').value,
+    TANGGAL_AKTIF: document.getElementById('form-tgl-aktif').value,
+    TANGGAL_EXPIRE: document.getElementById('form-tgl-expire').value,
     CATATAN: document.getElementById('form-catatan').value,
+    LOGO_URL: document.getElementById('form-logo-url').value,
     SCREENSHOT: document.getElementById('form-screenshot').value
   };
 
   try {
-    let res;
-    if (isEdit) {
-      res = await ApiService.editBank(id, formData);
-    } else {
-      res = await ApiService.addBank(formData);
-    }
-
+    let res = isEdit ? await ApiService.editBank(id, formData) : await ApiService.addBank(formData);
     if (res.status === 'success') {
       Swal.fire('Sukses', res.message, 'success');
       closeModal();
@@ -473,9 +497,6 @@ async function handleFormSubmit(e) {
   }
 }
 
-/**
- * Delete Record
- */
 async function confirmDeleteRecord(id) {
   const confirm = await Swal.fire({
     title: 'Hapus Rekening Ini?',
@@ -491,7 +512,6 @@ async function confirmDeleteRecord(id) {
       const res = await ApiService.deleteBank(id);
       if (res.status === 'success') {
         Swal.fire('Terhapus', res.message, 'success');
-        closeDrawer();
         refreshDashboard();
       } else {
         Swal.fire('Error', res.message, 'error');
@@ -502,9 +522,15 @@ async function confirmDeleteRecord(id) {
   }
 }
 
-/**
- * Settings Modal (API URL Config)
- */
+function togglePasswordVisibility(fieldId) {
+  const el = document.getElementById(fieldId);
+  if (el.type === 'password') {
+    el.type = 'text';
+  } else {
+    el.type = 'password';
+  }
+}
+
 function showSettingsModal() {
   Swal.fire({
     title: 'Pengaturan REST API',
@@ -516,25 +542,18 @@ function showSettingsModal() {
     confirmButtonText: 'Simpan URL',
     preConfirm: () => {
       const url = document.getElementById('swal-input-url').value.trim();
-      if (!url) {
-        Swal.showValidationMessage('URL tidak boleh kosong');
-      }
+      if (!url) Swal.showValidationMessage('URL tidak boleh kosong');
       return url;
     }
   }).then((result) => {
     if (result.isConfirmed) {
       localStorage.setItem('BANK_APP_GAS_URL', result.value);
       CONFIG.API_URL = result.value;
-      Swal.fire('Saved', 'URL API berhasil disimpan', 'success').then(() => {
-        window.location.reload();
-      });
+      Swal.fire('Saved', 'URL API berhasil disimpan', 'success').then(() => window.location.reload());
     }
   });
 }
 
-/**
- * Helper: Copy Text to Clipboard
- */
 function copyText(text) {
   navigator.clipboard.writeText(text);
   Swal.fire({

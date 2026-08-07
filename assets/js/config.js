@@ -3,8 +3,8 @@
  */
 
 const CONFIG = {
-  // URL Google Apps Script Web App Anda
-  API_URL: 'https://script.google.com/macros/s/AKfycbwugz6F1Vy9lbzpEy8MvSj0l5L5FbcwuijhH1VpQbWQRa3ae5Om1k9HXqLZJSMIDg7BZw/exec',
+  // URL Google Apps Script Web App
+  API_URL: 'https://script.google.com/macros/s/AKfycbw3yXkpqxipFlRXuwdQl9AkMMe5ANLfX5C3TOC-EAa7aWw8o4MBGAq3iozJa2HA89RtmA/exec',
   
   APP_NAME: 'Bank Admin V2',
   VERSION: '2.0.0',
@@ -50,7 +50,7 @@ const CONFIG = {
     },
     KASIR: {
       canAdd: false,
-      canEdit: false, // Can only update status & catatan
+      canEdit: false,
       canUpdateStatusNotes: true,
       canDelete: false,
       canManageUsers: false,
@@ -77,16 +77,10 @@ function getRolePermissions(role) {
   };
 }
 
-/**
- * Format Currency / Numbers
- */
 function formatNumber(num) {
   return new Intl.NumberFormat('id-ID').format(num || 0);
 }
 
-/**
- * Format ISO Date to Readable Format
- */
 function formatDate(isoString) {
   if (!isoString || isoString === '-') return '-';
   try {

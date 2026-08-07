@@ -2,13 +2,11 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <!-- Fallback otomatis redirect dalam 1 detik -->
   <meta http-equiv="refresh" content="1;url=login.html">
   <title>Redirecting...</title>
   <script src="assets/js/config.js"></script>
   <script src="assets/js/auth.js"></script>
   <script>
-    // Langsung eksekusi redirect tanpa menunggu DOMContentLoaded
     try {
       if (typeof AuthService !== 'undefined' && AuthService.isAuthenticated && AuthService.isAuthenticated()) {
         window.location.replace('dashboard.html');

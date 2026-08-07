@@ -1,19 +1,15 @@
 /**
- * BANK MANAGEMENT SYSTEM V2.0 - API SERVICE LAYER
- * Handles all REST API communications with Google Apps Script
+ * BANK MANAGEMENT SYSTEM V2.0 - API SERVICE LAYER (EXTENDED)
  */
 
 const ApiService = {
-  /**
-   * Main Request Gateway
-   */
   async request(action, payload = {}) {
-    const apiUrl = CONFIG.API_URL;
+    const apiUrl = CONFIG.API_URL || localStorage.getItem('BANK_APP_GAS_URL') || '';
     if (!apiUrl) {
       Swal.fire({
         icon: 'warning',
         title: 'Google Apps Script URL Not Configured',
-        html: `Silakan set <b>Google Apps Script Web App URL</b> di menu Pengaturan / Popup setup.`,
+        html: `Silakan set <b>Google Apps Script Web App URL</b> di menu Pengaturan.`,
         confirmButtonColor: '#6366f1'
       });
       throw new Error('API_URL_MISSING');
@@ -30,7 +26,7 @@ const ApiService = {
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'text/plain;charset=utf-8', // Preferred for GAS CORS preflight avoidance
+          'Content-Type': 'text/plain;charset=utf-8',
         },
         body: body
       });
@@ -60,21 +56,18 @@ const ApiService = {
     }
   },
 
-  // Auth API
-  async login(username, password) {
-    return this.request('login', { username, password });
+  async login(username, password, clientIp = '') {
+    return this.request('login', { username, password, clientIp });
   },
 
   async verifySession() {
     return this.request('verifySession');
   },
 
-  // Dashboard API
   async getDashboardStats() {
     return this.request('getDashboardStats');
   },
 
-  // Bank Data API
   async getBankList(params = {}) {
     return this.request('getBankList', params);
   },
@@ -99,7 +92,6 @@ const ApiService = {
     return this.request('importBankData', { items });
   },
 
-  // Users API
   async getUsers() {
     return this.request('getUsers');
   },
@@ -116,7 +108,6 @@ const ApiService = {
     return this.request('deleteUser', { id });
   },
 
-  // Master & Logs
   async getMasterData() {
     return this.request('getMasterData');
   },
