@@ -4,7 +4,7 @@
 
 const CONFIG = {
   // URL Google Apps Script Web App
-  API_URL: 'https://script.google.com/macros/s/AKfycbw3yXkpqxipFlRXuwdQl9AkMMe5ANLfX5C3TOC-EAa7aWw8o4MBGAq3iozJa2HA89RtmA/exec',
+  API_URL: 'https://script.google.com/macros/s/AKfycbxmFbGGU5U4qExHx7o0TZk7JrmjM1I7vx14XucOJRtoglaCWpkMkbFDrylNY_d15P4j6w/exec',
   
   APP_NAME: 'Bank Admin V2',
   VERSION: '2.0.0',
