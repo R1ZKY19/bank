@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Enterprise Bank Management System V2.0</title>
+
+  <!-- Google Fonts & Styles -->
+  <link rel="stylesheet" href="assets/css/styles.css">
+
+  <!-- Third Party Libraries CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  
+  <style>
+    .d-none { display: none !important; }
+    .d-flex { display: flex !important; }
+    .align-items-center { align-items: center !important; }
+    .justify-content-between { justify-content: space-between !important; }
+    .gap-2 { gap: 0.5rem !important; }
+    .gap-3 { gap: 0.75rem !important; }
+    .text-center { text-align: center !important; }
+    .py-4 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+  </style>
+</head>
+<body>
+
+  <div class="app-layout">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="app-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-brand-icon">
+          <i data-lucide="landmark"></i>
+        </div>
+        <div>
+          <h1 style="font-size: 1.125rem; font-weight: 800; line-height: 1.2;">Bank Admin</h1>
+          <p class="text-secondary text-xs">Version 2.0 Enterprise</p>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item active" data-tab="dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard Bank</span>
+        </a>
+        <a href="#" class="nav-item" id="nav-users" data-tab="users">
+          <i data-lucide="users"></i>
+          <span>Kelola User</span>
+        </a>
+        <a href="#" class="nav-item" id="nav-logs" data-tab="logs">
+          <i data-lucide="file-text"></i>
+          <span>Audit Activity Log</span>
+        </a>
+        <a href="#" class="nav-item" onclick="showSettingsModal(); return false;">
+          <i data-lucide="settings"></i>
+          <span>API Config</span>
+        </a>
+      </nav>
+
+      <div style="padding: 1rem 0.85rem; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 0.65rem;">
+          <div style="width: 36px; height: 36px; border-radius: 9999px; background: var(--accent-light); color: var(--accent-primary); display: flex; align-items: center; justify-content: center; font-weight: 700;">
+            <i data-lucide="user"></i>
+          </div>
+          <div>
+            <div id="user-display-name" class="font-semibold text-sm">User</div>
+            <span id="user-role-badge" class="badge badge-indigo">ROLE</span>
+          </div>
+        </div>
+        <button class="btn btn-icon btn-outline btn-xs" id="btn-logout" title="Logout">
+          <i data-lucide="log-out"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="main-content">
+      <!-- Topbar Header -->
+      <header class="topbar">
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn btn-icon btn-outline d-lg-none" onclick="document.getElementById('app-sidebar').classList.toggle('mobile-open')">
+            <i data-lucide="menu"></i>
+          </button>
+          <div style="position: relative; width: 280px;">
+            <i data-lucide="search" style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); width: 16px;"></i>
+            <input type="text" id="input-search" class="form-input" style="padding-left: 2.25rem;" placeholder="Cari Rekening / HP / Bank...">
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn btn-outline btn-xs" id="btn-theme-toggle" title="Toggle Dark/Light Mode">
+            <i data-lucide="sun"></i>
+          </button>
+          <button class="btn btn-outline" onclick="refreshDashboard()"><i data-lucide="refresh-cw"></i> Refresh</button>
+          
+          <button class="btn btn-primary" id="btn-add-data" onclick="openBankModal()"><i data-lucide="plus"></i> Tambah Data</button>
+          <button class="btn btn-secondary" id="btn-import-data" onclick="triggerImportFile()"><i data-lucide="upload"></i> Import</button>
+          
+          <div style="position: relative; display: inline-block;">
+            <button class="btn btn-secondary" id="btn-export-dropdown" onclick="document.getElementById('export-menu').classList.toggle('d-none')">
+              <i data-lucide="download"></i> Export <i data-lucide="chevron-down"></i>
+            </button>
+            <div id="export-menu" class="glass-panel d-none" style="position: absolute; right: 0; top: 110%; z-index: 50; width: 140px; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.25rem;">
+              <button class="btn btn-outline btn-xs" style="justify-content: start;" onclick="ExportService.exportToExcel(state.currentData)">Excel (.xlsx)</button>
+              <button class="btn btn-outline btn-xs" style="justify-content: start;" onclick="ExportService.exportToCSV(state.currentData)">CSV</button>
+              <button class="btn btn-outline btn-xs" style="justify-content: start;" onclick="ExportService.printTable(state.currentData)">Print / PDF</button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content Body -->
+      <div class="content-body">
+        
+        <!-- TAB 1: BANK DASHBOARD -->
+        <div id="tab-dashboard" class="tab-content">
+          <!-- Stats Grid -->
+          <div class="stats-grid" style="margin-bottom: 1.5rem;">
+            <div class="glass-card">
+              <div class="text-secondary text-xs font-semibold">TOTAL DATA REKENING</div>
+              <div id="stat-total-data" class="stat-value">0</div>
+              <div class="text-muted text-xs">Seluruh entri bank</div>
+            </div>
+            <div class="glass-card">
+              <div class="text-secondary text-xs font-semibold">JUMLAH BANK MASTER</div>
+              <div id="stat-total-bank" class="stat-value" style="color: var(--cyan);">0</div>
+              <div class="text-muted text-xs">Variasi institusi bank</div>
+            </div>
+            <div class="glass-card">
+              <div class="text-secondary text-xs font-semibold">TOTAL USER AKTIF</div>
+              <div id="stat-total-user" class="stat-value" style="color: var(--accent-primary);">0</div>
+              <div class="text-muted text-xs">Pengguna sistem</div>
+            </div>
+            <div class="glass-card">
+              <div class="text-secondary text-xs font-semibold">STATUS AKTIF</div>
+              <div id="stat-total-aktif" class="stat-value" style="color: var(--emerald);">0</div>
+              <div class="text-muted text-xs">Siap digunakan</div>
+            </div>
+            <div class="glass-card">
+              <div class="text-secondary text-xs font-semibold">STATUS NONAKTIF</div>
+              <div id="stat-total-nonaktif" class="stat-value" style="color: var(--rose);">0</div>
+              <div class="text-muted text-xs">Dihentikan / Limit</div>
+            </div>
+            <div class="glass-card">
+              <div class="text-secondary text-xs font-semibold">DATA HARI INI</div>
+              <div id="stat-today-data" class="stat-value" style="color: var(--amber);">0</div>
+              <div class="text-muted text-xs">Ditambahkan hari ini</div>
+            </div>
+          </div>
+
+          <!-- Charts Section -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+            <div class="glass-card">
+              <h3 class="text-sm font-semibold mb-3">Distribusi per Bank</h3>
+              <div style="height: 220px;"><canvas id="chart-bank-breakdown"></canvas></div>
+            </div>
+            <div class="glass-card">
+              <h3 class="text-sm font-semibold mb-3">Persentase per Group</h3>
+              <div style="height: 220px;"><canvas id="chart-group-breakdown"></canvas></div>
+            </div>
+          </div>
+
+          <!-- Filters Bar -->
+          <div class="glass-card" style="margin-bottom: 1rem; padding: 0.85rem 1.25rem;">
+            <div class="d-flex align-items-center justify-content-between" style="flex-wrap: wrap; gap: 1rem;">
+              <div class="d-flex align-items-center gap-2">
+                <select id="select-filter-bank" class="form-select" style="width: auto;">
+                  <option value="">Semua Bank</option>
+                </select>
+                <select id="select-filter-group" class="form-select" style="width: auto;">
+                  <option value="">Semua Group</option>
+                </select>
+                <select id="select-filter-status" class="form-select" style="width: auto;">
+                  <option value="">Semua Status</option>
+                  <option value="AKTIF">AKTIF</option>
+                  <option value="NONAKTIF">NONAKTIF</option>
+                  <option value="PENDING">PENDING</option>
+                  <option value="LIMIT">LIMIT</option>
+                </select>
+              </div>
+
+              <div class="d-flex align-items-center gap-2">
+                <span class="text-xs text-secondary">Tampilkan:</span>
+                <select id="select-limit" class="form-select" style="width: auto;">
+                  <option value="50">50 Data</option>
+                  <option value="100">100 Data</option>
+                  <option value="200">200 Data</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Table Container -->
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th class="sticky-col">No</th>
+                  <th>Bank</th>
+                  <th>Group</th>
+                  <th>No Rekening</th>
+                  <th>Nama Rekening</th>
+                  <th>No HP</th>
+                  <th>Status</th>
+                  <th>Update Terakhir</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="table-bank-body">
+                <!-- Dynamic Rows -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Footer -->
+          <div class="d-flex align-items-center justify-content-between" style="margin-top: 1rem;">
+            <div id="pagination-info" class="text-xs text-secondary">Menampilkan 0 data</div>
+            <div class="d-flex align-items-center gap-2">
+              <button class="btn btn-outline btn-xs" id="btn-prev-page">
+                <i data-lucide="chevron-left"></i> Prev
+              </button>
+              <button class="btn btn-outline btn-xs" id="btn-next-page">
+                Next <i data-lucide="chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: USER MANAGEMENT -->
+        <div id="tab-users" class="tab-content d-none">
+          <div class="glass-card" style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+            <h2 class="text-lg font-bold">Kelola Pengguna System</h2>
+            <button class="btn btn-primary btn-sm" onclick="openAddUserModal()"><i data-lucide="user-plus"></i> Tambah User</button>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Username</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Last Login</th>
+                  <th>Created At</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="table-users-body">
+                <!-- User Rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 3: ACTIVITY LOGS -->
+        <div id="tab-logs" class="tab-content d-none">
+          <div class="glass-card mb-3">
+            <h2 class="text-lg font-bold mb-1">Audit Trail & Activity Log</h2>
+            <p class="text-xs text-muted">Riwayat aktivitas seluruh pengguna sistem bank.</p>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Username</th>
+                  <th>Role</th>
+                  <th>Aktivitas</th>
+                  <th>Detail</th>
+                </tr>
+              </thead>
+              <tbody id="table-logs-body">
+                <!-- Log Rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Hidden File Input for Import -->
+  <input type="file" id="input-import-file" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleImportFileSelect(this)">
+
+  <!-- SLIDE-OVER DRAWER (DETAIL VIEW) -->
+  <div id="drawer-backdrop" class="drawer-backdrop" onclick="closeDrawer()">
+    <div class="drawer-content" onclick="event.stopPropagation()">
+      <div class="d-flex align-items-center justify-content-between" style="border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.25rem;">
+        <div>
+          <h3 id="drawer-bank-name" class="font-bold text-lg">Detail Rekening</h3>
+          <span id="drawer-bank-group" class="badge badge-indigo">GROUP</span>
+        </div>
+        <button class="btn btn-icon btn-outline" onclick="closeDrawer()"><i data-lucide="x"></i></button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 1rem;">
+        <div class="glass-card">
+          <div class="text-xs text-muted mb-1">NOMOR REKENING</div>
+          <div class="d-flex align-items-center justify-content-between">
+            <span id="drawer-no-rek" class="text-mono font-bold text-lg">123456789</span>
+            <button class="btn btn-outline btn-xs" onclick="copyText(document.getElementById('drawer-no-rek').textContent)"><i data-lucide="copy"></i> Copy</button>
+          </div>
+        </div>
+
+        <div class="glass-card">
+          <div class="text-xs text-muted mb-1">NAMA REKENING</div>
+          <div id="drawer-nama-rek" class="font-semibold text-base">-</div>
+        </div>
+
+        <div class="glass-card">
+          <div class="text-xs text-muted mb-1">NOMOR HP OPERASIONAL</div>
+          <div class="d-flex align-items-center justify-content-between">
+            <span id="drawer-no-hp" class="text-mono font-semibold">-</span>
+            <button class="btn btn-outline btn-xs" onclick="copyText(document.getElementById('drawer-no-hp').textContent)"><i data-lucide="phone"></i> Copy</button>
+          </div>
+        </div>
+
+        <div class="glass-card">
+          <div class="text-xs text-muted mb-1">STATUS REKENING</div>
+          <span id="drawer-status" class="badge badge-emerald">AKTIF</span>
+        </div>
+
+        <div class="glass-card">
+          <div class="text-xs text-muted mb-1">CATATAN</div>
+          <p id="drawer-catatan" class="text-sm text-secondary">-</p>
+        </div>
+
+        <div class="glass-card d-none">
+          <div class="text-xs text-muted mb-2">SCREENSHOT BUKTI</div>
+          <img id="drawer-screenshot-img" src="" alt="Screenshot" style="width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+        </div>
+
+        <div style="font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <div>Created: <span id="drawer-created">-</span></div>
+          <div>Updated: <span id="drawer-updated">-</span></div>
+          <div>Updated By: <span id="drawer-updated-by">-</span></div>
+        </div>
+
+        <div class="d-flex gap-2" style="margin-top: 1rem;">
+          <button id="drawer-btn-edit" class="btn btn-primary" style="flex: 1;"><i data-lucide="edit"></i> Edit</button>
+          <button id="drawer-btn-delete" class="btn btn-danger" style="flex: 1;"><i data-lucide="trash-2"></i> Hapus</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- POPUP MODAL (ADD / EDIT RECORD) -->
+  <div id="modal-backdrop" class="modal-backdrop">
+    <div class="modal-window">
+      <div class="d-flex align-items-center justify-content-between mb-4">
+        <h3 id="modal-title" class="font-bold text-lg">Tambah Data Bank</h3>
+        <button class="btn btn-icon btn-outline" onclick="closeModal()"><i data-lucide="x"></i></button>
+      </div>
+
+      <form id="form-bank-record" onsubmit="handleFormSubmit(event)">
+        <input type="hidden" id="form-bank-id">
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="form-bank">Nama Bank</label>
+            <select id="form-bank" class="form-select" required>
+              <option value="BCA">BCA</option>
+              <option value="MANDIRI">MANDIRI</option>
+              <option value="BRI">BRI</option>
+              <option value="BNI">BNI</option>
+              <option value="DANA">DANA</option>
+              <option value="OVO">OVO</option>
+              <option value="GOPAY">GOPAY</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="form-group">Group</label>
+            <select id="form-group" class="form-select" required>
+              <option value="GROUP VIP 1">GROUP VIP 1</option>
+              <option value="GROUP REGULER A">GROUP REGULER A</option>
+              <option value="GROUP OPERASIONAL">GROUP OPERASIONAL</option>
+              <option value="GROUP E-WALLET">GROUP E-WALLET</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="form-nama-rek">Nama Rekening Pemilik</label>
+          <input type="text" id="form-nama-rek" class="form-input" placeholder="e.g. PT UTAMA SEJAHTERA" required>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="form-no-rek">Nomor Rekening</label>
+            <input type="text" id="form-no-rek" class="form-input text-mono" placeholder="1234567890" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="form-no-hp">Nomor Handphone</label>
+            <input type="text" id="form-no-hp" class="form-input text-mono" placeholder="08123456789">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="form-status">Status Rekening</label>
+          <select id="form-status" class="form-select" required>
+            <option value="AKTIF">AKTIF</option>
+            <option value="NONAKTIF">NONAKTIF</option>
+            <option value="PENDING">PENDING</option>
+            <option value="LIMIT">LIMIT</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="form-catatan">Catatan / Keterangan</label>
+          <textarea id="form-catatan" class="form-textarea" rows="3" placeholder="Catatan internal..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="form-screenshot">URL Screenshot (Cloudinary / Drive Image Link)</label>
+          <input type="url" id="form-screenshot" class="form-input" placeholder="https://res.cloudinary.com/... or https://drive.google.com/...">
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center" style="margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <button type="button" class="btn btn-outline" onclick="closeModal()">Batal</button>
+          <button type="submit" class="btn btn-primary"><i data-lucide="check"></i> Simpan Data</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/export.js"></script>
+  <script src="assets/js/dashboard.js"></script>
+
+  <script>
+    // Import File Trigger
+    function triggerImportFile() {
+      document.getElementById('input-import-file').click();
+    }
+
+    async function handleImportFileSelect(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      try {
+        const data = await ExportService.parseImportFile(file);
+        if (data.length === 0) {
+          Swal.fire('Warning', 'File kosong atau tidak valid.', 'warning');
+          return;
+        }
+
+        const confirm = await Swal.fire({
+          title: `Import ${data.length} Data Bank?`,
+          text: `Akan mengimport data dari file ${file.name}`,
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'Ya, Import Data'
+        });
+
+        if (confirm.isConfirmed) {
+          Swal.showLoading();
+          const res = await ApiService.importBankData(data);
+          if (res.status === 'success') {
+            Swal.fire('Sukses', res.message, 'success');
+            refreshDashboard();
+          } else {
+            Swal.fire('Error', res.message, 'error');
+          }
+        }
+      } catch (err) {
+        Swal.fire('Error', 'Gagal membaca file Excel/CSV.', 'error');
+      } finally {
+        input.value = '';
+      }
+    }
+
+    // User Management Tab Handlers
+    async function loadUsersList() {
+      const tbody = document.getElementById('table-users-body');
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4">Memuat pengguna...</td></tr>`;
+
+      try {
+        const res = await ApiService.getUsers();
+        if (res.status === 'success') {
+          tbody.innerHTML = res.users.map(u => `
+            <tr>
+              <td>${u.id}</td>
+              <td><b>${u.username}</b></td>
+              <td><span class="badge badge-indigo">${u.role}</span></td>
+              <td><span class="badge ${u.status === 'AKTIF' ? 'badge-emerald' : 'badge-rose'}">${u.status}</span></td>
+              <td class="text-xs text-muted">${formatDate(u.lastLogin)}</td>
+              <td class="text-xs text-muted">${formatDate(u.createdAt)}</td>
+              <td>
+                <button class="btn btn-xs btn-danger" onclick="deleteUserRecord('${u.id}')"><i data-lucide="trash"></i></button>
+              </td>
+            </tr>
+          `).join('');
+          lucide.createIcons();
+        }
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Gagal memuat pengguna</td></tr>`;
+      }
+    }
+
+    async function openAddUserModal() {
+      const { value: formValues } = await Swal.fire({
+        title: 'Tambah User Baru',
+        html: `
+          <input id="swal-usr-name" class="swal2-input" placeholder="Username">
+          <input id="swal-usr-pass" type="password" class="swal2-input" placeholder="Password">
+          <select id="swal-usr-role" class="swal2-input">
+            <option value="LEADER">LEADER</option>
+            <option value="KAPTEN">KAPTEN</option>
+            <option value="CS">CS</option>
+            <option value="KASIR">KASIR</option>
+          </select>
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        preConfirm: () => ({
+          username: document.getElementById('swal-usr-name').value.trim(),
+          password: document.getElementById('swal-usr-pass').value,
+          role: document.getElementById('swal-usr-role').value,
+          status: 'AKTIF'
+        })
+      });
+
+      if (formValues && formValues.username && formValues.password) {
+        const res = await ApiService.addUser(formValues);
+        if (res.status === 'success') {
+          Swal.fire('Sukses', res.message, 'success');
+          loadUsersList();
+        } else {
+          Swal.fire('Error', res.message, 'error');
+        }
+      }
+    }
+
+    async function deleteUserRecord(id) {
+      if (confirm('Hapus user ini?')) {
+        const res = await ApiService.deleteUser(id);
+        if (res.status === 'success') {
+          loadUsersList();
+        }
+      }
+    }
+
+    // Activity Logs Tab Handlers
+    async function loadActivityLogs() {
+      const tbody = document.getElementById('table-logs-body');
+      tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4">Memuat log aktivitas...</td></tr>`;
+
+      try {
+        const res = await ApiService.getActivityLogs();
+        if (res.status === 'success') {
+          tbody.innerHTML = res.logs.map(l => `
+            <tr>
+              <td class="text-xs text-mono">${formatDate(l.timestamp)}</td>
+              <td><b>${l.username}</b></td>
+              <td><span class="badge badge-indigo">${l.role}</span></td>
+              <td><b>${l.action}</b></td>
+              <td class="text-xs text-secondary">${l.details}</td>
+            </tr>
+          `).join('');
+        }
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Gagal memuat log</td></tr>`;
+      }
+    }
+  </script>
+</body>
+</html>
