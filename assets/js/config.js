@@ -3,9 +3,8 @@
  */
 
 const CONFIG = {
-  // Placeholder or user-configured GAS Web App Webhook URL
-  // Replace this URL with deployed Google Apps Script Web App URL
-  API_URL: localStorage.getItem('https://script.google.com/macros/s/AKfycbw3yXkpqxipFlRXuwdQl9AkMMe5ANLfX5C3TOC-EAa7aWw8o4MBGAq3iozJa2HA89RtmA/exec') || '',
+  // Tanam URL Deployment Google Apps Script Anda di sini:
+  API_URL: 'https://script.google.com/macros/s/AKfycbw3yXkpqxipFlRXuwdQl9AkMMe5ANLfX5C3TOC-EAa7aWw8o4MBGAq3iozJa2HA89RtmA/exec',
   
   APP_NAME: 'Bank Admin V2',
   VERSION: '2.0.0',
@@ -13,7 +12,9 @@ const CONFIG = {
   USER_KEY: 'BANK_APP_USER_PROFILE',
   THEME_KEY: 'BANK_APP_THEME',
   AUTO_LOGOUT_MINUTES: 30,
-
+  
+  // ... sisanya tetap sama
+}
   // Role Permissions Definition
   PERMISSIONS: {
     LEADER: {
