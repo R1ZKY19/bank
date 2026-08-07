@@ -4,7 +4,7 @@
 
 const CONFIG = {
   // URL Google Apps Script Web App Anda
-  API_URL: 'https://script.google.com/macros/s/AKfycbw3yXkpqxipFlRXuwdQl9AkMMe5ANLfX5C3TOC-EAa7aWw8o4MBGAq3iozJa2HA89RtmA/exec',
+  API_URL: 'https://script.google.com/macros/s/AKfycbwugz6F1Vy9lbzpEy8MvSj0l5L5FbcwuijhH1VpQbWQRa3ae5Om1k9HXqLZJSMIDg7BZw/exec',
   
   APP_NAME: 'Bank Admin V2',
   VERSION: '2.0.0',
