@@ -3,7 +3,7 @@
  */
 
 const CONFIG = {
-  // Tanam URL Deployment Google Apps Script Anda di sini:
+  // URL Google Apps Script Web App Anda
   API_URL: 'https://script.google.com/macros/s/AKfycbw3yXkpqxipFlRXuwdQl9AkMMe5ANLfX5C3TOC-EAa7aWw8o4MBGAq3iozJa2HA89RtmA/exec',
   
   APP_NAME: 'Bank Admin V2',
@@ -12,9 +12,7 @@ const CONFIG = {
   USER_KEY: 'BANK_APP_USER_PROFILE',
   THEME_KEY: 'BANK_APP_THEME',
   AUTO_LOGOUT_MINUTES: 30,
-  
-  // ... sisanya tetap sama
-}
+
   // Role Permissions Definition
   PERMISSIONS: {
     LEADER: {
