@@ -1,23 +1,15 @@
-# Task Checklist: Bank Management System V2.0 - Extended Features Customization
+# Task Checklist: Ultra-Professional UI Redesign (Login & Dashboard)
 
-- [/] **Phase 1: Database Schema & Backend Extensions (Code.gs)**
-  - [x] Extend `BANK` sheet schema with new fields: `JENIS_BANK` (DEPO, WD, KAS), `TANGGAL_AKTIF`, `TANGGAL_EXPIRE`, `USER_ID_IB`, `PASSWORD_IB`, `SIM_CARD_INFO`, `LOGO_URL`
-  - [x] Add IP Whitelisting security check in `handleLogin` & IP Whitelist management for LEADER
-  - [x] Update `setupDatabase()` seed data & `MASTER_STATUS` (including "REK CABUT KAS 1")
-  - [x] Update `getBankList`, `addBank`, `editBank` to process new extended fields
+- [/] **Phase 1: UI Security & Login Redesign (login.html)**
+  - [x] Remove exposed demo preset buttons to eliminate security risk
+  - [x] Design ultra-sleek enterprise login interface (Stripe/Linear inspired dark mesh background, security badges, password show/hide toggle)
 
-- [ ] **Phase 2: Frontend Styling & Modal Dialog Adjustments (styles.css)**
-  - [ ] Update CSS for centered Detail Popup Modal with logo header, expiry badges, and IB credentials box
-  - [ ] Style badges for `JENIS_BANK` (DEPO, WD, KAS) and `REK CABUT KAS 1`
+- [ ] **Phase 2: CSS Theme & Component Enhancement (styles.css)**
+  - [ ] Polish Glassmorphism effects, active nav indicators, stat card glowing borders, table row hover, badge styling
 
-- [ ] **Phase 3: Frontend Views & Interactivity (dashboard.html & JS)**
-  - [ ] Update Detail view from Drawer to Centered Popup Modal
-  - [ ] Add countdown logic ("Sisa X Hari") for `TANGGAL_EXPIRE`
-  - [ ] Add form input fields in Add/Edit modal for Jenis Bank, Tanggal Aktif, Tanggal Expire, User ID IB, Password IB, Dual SIM Card Info, Logo URL
-  - [ ] Update table columns and filter dropdowns for Jenis Bank and new statuses
-  - [ ] Add IP Whitelist management UI for LEADER role in User/Settings tab
+- [ ] **Phase 3: Dashboard Layout Refinement (dashboard.html & dashboard.js)**
+  - [ ] Refine topbar header, search bar, metrics cards, table view, detail popup modal, and action buttons without altering any data schema
 
-- [ ] **Phase 4: Archiving & Documentation**
-  - [ ] Update project zip archive
-  - [ ] Upload updated zip archive to Google Drive
-  - [ ] Verify execution and deliver code update to user
+- [ ] **Phase 4: Packaging & Deployment**
+  - [ ] Re-zip project files and upload to Google Drive
+  - [ ] Deliver updated code & links to user
