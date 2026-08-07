@@ -2,17 +2,22 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
+  <!-- Fallback otomatis redirect dalam 1 detik -->
+  <meta http-equiv="refresh" content="1;url=login.html">
   <title>Redirecting...</title>
   <script src="assets/js/config.js"></script>
   <script src="assets/js/auth.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      if (AuthService.isAuthenticated()) {
-        window.location.href = 'dashboard.html';
+    // Langsung eksekusi redirect tanpa menunggu DOMContentLoaded
+    try {
+      if (typeof AuthService !== 'undefined' && AuthService.isAuthenticated && AuthService.isAuthenticated()) {
+        window.location.replace('dashboard.html');
       } else {
-        window.location.href = 'login.html';
+        window.location.replace('login.html');
       }
-    });
+    } catch (e) {
+      window.location.replace('login.html');
+    }
   </script>
 </head>
 <body style="background: #090d16; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif;">
